@@ -44,26 +44,26 @@ router.get('/:id', (req, res) => {
 
 
 //POST a post to posts !!
-server.post('/api/posts', function(req, res) {
-    const postData = req.body;
+// server.post('/api/posts', function(req, res) {
+//     const postData = req.body;
 
-    Posts.insert(postData)
-    .then(post => {
-        res.status(201).json(post);
-    })
-    .catch(error => {
-        console.log(error);
+//     Posts.insert(postData)
+//     .then(post => {
+//         res.status(201).json(post);
+//     })
+//     .catch(error => {
+//         console.log(error);
         
-        res.status(500).json({
-            error: "There was an error while saving the post to the database" 
-        });
-    });
+//         res.status(500).json({
+//             error: "There was an error while saving the post to the database" 
+//         });
+//     });
 
-     //handling if title or contents is missing
-     if (!postData.title || !postData.contents) {
-        res.status(400).json({ errorMessage: "Please provide title and contents for the post."})
-    }
-});
+//      //handling if title or contents is missing
+//      if (!postData.title || !postData.contents) {
+//         res.status(400).json({ errorMessage: "Please provide title and contents for the post."})
+//     }
+// });
 
 
 //DELETE a post by specific id
@@ -73,36 +73,51 @@ router.delete('/:id', (req, res) => {
       if (count > 0) {
         res.status(200).json({ message: 'The post has been nuked' });
       } else {
-        res.status(404).json({ message: 'The post could not be found' });
+        res.status(404).json({ message: "The post with the specified ID does not exist." });
       }
     })
     .catch(error => {
       // log error to database
       console.log(error);
       res.status(500).json({
-        message: 'Error removing the post',
+        error: "The post could not be removed"
       });
     });
 });
 
-router.put('/:id', (req, res) => {
-  const changes = req.body;
-  Posts.update(req.params.id, changes)
-    .then(post => {
-      if (post) {
-        res.status(200).json(post);
-      } else {
-        res.status(404).json({ message: 'The post could not be found' });
-      }
+
+
+//PUT  To update the post data  by specific id. Modified post is returned
+
+server.put('/api/posts/:id', (req, res) => {
+    const id = req.params.id;
+    
+    Posts.findById(id)
+    .then(findPost => {
+        if (!findPost) {
+            res.status(404).json({ message: "The post with the specified ID does not exist."});
+        }
     })
-    .catch(error => {
-      // log error to database
-      console.log(error);
-      res.status(500).json({
-        message: 'Error updating the post',
-      });
-    });
-});
+
+    if (!req.body.name || !req.body.bio) {
+        res.status(400).json({ errorMessage: "Please provide title and contents for the post."})
+    }
+
+    const title = req.body.title;
+    const contents = req.body.contents;
+    const sendObject = {title, contents};
+    Users.update(id, sendObject)
+    .then(updatedPost => {
+        Users.findById(id)
+        .then(response => {
+            res.status(200).json(response);
+        })
+    })
+    .catch(err => {
+        console.log(err);
+        res.status(500).json({ error: "The post information could not be modified."} )
+    })
+})
 
 // add an endpoint that returns all the messages for a post
 // add an endpoint for adding new message to a post
